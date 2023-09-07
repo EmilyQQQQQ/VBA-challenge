@@ -1,0 +1,145 @@
+Sub Analysis()
+
+Dim lastRow As Long
+Dim numberValue As String
+Dim yearPart As String
+Dim monthPart As String
+Dim dayPart As String
+Dim TotalStockVolume As Double
+Dim openingPrice As Double
+Dim closingPrice As Double
+Dim yearlyChange As Double
+Dim currStock As String
+Dim percentageChange As Double
+Dim maxIncreaseStock As String
+Dim maxIncreasePercentage As Double
+Dim maxDecreaseStock As String
+Dim maxDecreasePercentage As Double
+Dim maxVolumeStock As String
+Dim maxVolume As Double
+Dim ws As Worksheet
+
+'run the script on every worksheet
+For Each ws In ThisWorkbook.Worksheets
+
+'filled in titles for required table
+ws.Range("I1").Value = "Ticker"
+ws.Range("J1").Value = "Yearly Change"
+ws.Range("K1").Value = "Percent Change"
+ws.Range("L1").Value = "Total Stock Volume"
+ws.Range("P1").Value = "Ticker"
+ws.Range("Q1").Value = "Value"
+ws.Range("O2").Value = "Greatest % Increase"
+ws.Range("O3").Value = "Greatest % Decrease"
+ws.Range("O4").Value = "Greatest Total Volume"
+
+openingPrice = 0
+lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+
+'''''convert text to date format
+
+j = 2
+For i = 2 To lastRow
+
+    If openingPrice = 0 Then
+        openingPrice = ws.Cells(i, "C")
+    End If
+
+    ' convert text to number
+    ws.Cells(i, 2).Value = Val(ws.Cells(i, 2).Value)
+    ' convert number to date
+    numberValue = ws.Cells(i, 2).Value
+    ' Assuming the number format is always 8 characters long
+    If Len(numberValue) = 8 Then
+
+        'extract the year, month, and day components from the number
+        yearPart = Left(numberValue, 4)
+        monthPart = Mid(numberValue, 5, 2)
+        dayPart = Right(numberValue, 2)
+        'construct a valid date string in the desired format
+        On Error Resume Next
+            ws.Cells(i, 2).Value = yearPart & "/" & monthPart & "/" & dayPart
+        On Error GoTo 0
+    End If
+
+'''''loop to filled in Ticker and their Total stock volume
+    If ws.Cells(i, 1).Value <> ws.Cells(i + 1, 1).Value Then
+    
+        'yearly change
+        closingPrice = ws.Cells(i, "F")
+        yearlyChange = closingPrice - openingPrice
+        ws.Cells(j, "J") = yearlyChange
+        'percentage change
+        percentageChange = yearlyChange / openingPrice
+        ws.Cells(j, "K") = FormatPercent(percentageChange)
+        'Ticker
+        ws.Cells(j, 9).Value = ws.Cells(i, 1).Value
+        'Total stock volume
+        ws.Cells(j, 12).Value = TotalStockVolume
+        j = j + 1
+        
+        openingPrice = 0
+        percentageChange = 0
+        TotalStockVolume = 0
+        
+    End If
+    TotalStockVolume = TotalStockVolume + ws.Cells(i, 7).Value
+
+Next i
+
+secondlastRow = ws.Cells(ws.Rows.Count, 10).End(xlUp).Row
+maxIncreasePercentage = 0
+maxDecreasePercentage = 0
+maxVolume = 0
+
+For h = 2 To secondlastRow
+
+'''''Result table
+'***** not giving the right result
+
+    currStock = ws.Cells(h, "I").Value
+
+    'greatest percentage increase
+    If ws.Cells(h, "K").Value > maxIncreasePercentage Then
+        maxIncreasePercentage = ws.Cells(h, "K").Value
+        maxIncreaseStock = currStock
+        ws.Cells(2, 16).Value = maxIncreaseStock
+        ws.Cells(2, 17).Value = FormatPercent(maxIncreasePercentage)
+    End If
+    'greatest percentage decrease
+    If ws.Cells(h, "K").Value < maxDecreasePercentage Then
+        maxDecreasePercentage = ws.Cells(h, "K").Value
+        maxDecreaseStock = currStock
+        ws.Cells(3, 16).Value = maxDecreaseStock
+        ws.Cells(3, 17).Value = FormatPercent(maxDecreasePercentage)
+    End If
+    'greatest total volume
+    If ws.Cells(h, "L").Value > maxVolume Then
+        maxVolume = ws.Cells(h, "L").Value
+        maxVolumeStock = currStock
+        ws.Cells(4, 16).Value = maxVolumeStock
+        ws.Cells(4, 17).Value = maxVolume
+    End If
+
+Next h
+
+'''''conditional formatting for Yearly Change column
+'red - under 0
+'green - over 0
+
+For k = 2 To secondlastRow
+
+    If ws.Cells(k, "J").Value >= 0 Then
+        ws.Cells(k, "J").Interior.ColorIndex = 4
+        
+        Else
+        ws.Cells(k, "J").Interior.ColorIndex = 3
+    End If
+
+Next k
+
+Next
+
+End Sub
+
+
